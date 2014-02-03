@@ -1,0 +1,33 @@
+<div class="container">
+	<div class="row">
+		
+		<div class="col-md-4">
+	        <h2>New platform</h2>
+	        <form class="form" role="form">
+	            <div class="form-group">
+	                <label class="control-label">Name</label>
+	                <input type="text" class="form-control" placeholder="Name" ng-model="new_platform.name"/>
+	            </div>
+
+	            <a data-toggle="modal" class="btn btn-primary" ng-click="addPlatform()">Add</a>
+	        </form>
+		</div>
+
+		<div class="col-md-8">
+			<h2>Platforms</h2>
+	        <table class="text-right table table-striped table-hover table-bordered">
+	            <tr>
+	                <th>Name</th>
+	                <th>Delete</th>
+	            </tr>
+	            <tr ng-repeat="p in platforms">
+	                <td>{{p.name}}</td> 
+	                <td><button type="button" class="btn btn-default btn-xs" ng-click="deletePlatform(p)">
+	                  <span class="glyphicon glyphicon-trash"></span>
+	                </button></td>
+	            </tr>
+	        </table> 
+		</div>
+
+	</div>	
+</div>

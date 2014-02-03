@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html ng-csp ng-app="beta-optimizer">
+
+<head>
+
+    <meta charset="utf-8">
+    <title>Beta Optimizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' media="screen" href='/content/css/bootstrap.css'>
+    <link rel='stylesheet' media="screen" href='/content/css/bootstrap-theme.css'>
+    <!--link rel="stylesheet" media="screen" href="content/css/main.css"-->
+
+</head>
+
+<body>
+
+    <nav ng-controller="NavController" class="navbar navbar-inverse" role="navigation">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+            </button>
+            <a class="navbar-brand" href="#/holdings">Beta Optimizer</a>
+        </div>
+
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                <li ng-class="{active:isActive('/holdings')}"><a href="#/holdings">Holdings</a></li>
+                <li ng-class="{active:isActive('/transactions')}"><a href="#/transactions">Transactions</a></li>
+                <li ng-class="{active:isActive('/products')}"><a href="#/products">Products</a></li>
+                <li ng-class="{active:isActive('/platforms')}"><a href="#/platforms">Platforms</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row" ng-repeat="alert in alerts">
+            <div class="alert alert-dismissable fade in" ng-class="alert.class">
+                <button type="button" class="close" ng-click="alert.close()" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <span>{{ alert.msg }}</span>
+            </div>  
+        </div>
+    </div>
+
+    <div ng-view></div>
+
+
+    <!-- External scripts -->
+    <script type='text/javascript' src='/lib/angular-1.2.10/angular.js'></script>
+    <script type='text/javascript' src="/lib/angular-1.2.10/angular-route.js"></script>
+    <script type='text/javascript' src="/lib/jquery-1.11.0.js"></script>
+    <script type='text/javascript' src='/lib/bootstrap.js'></script>
+
+    <!-- App scripts -->
+    <script type='text/javascript' src="/app/filters/filters.js"></script>
+    <script type='text/javascript' src="/app/app.js"></script>
+    <script type='text/javascript' src="/app/services/alert_service.js"></script>
+    <script type='text/javascript' src="/app/services/data_factory.js"></script>
+    <script type='text/javascript' src="/app/controllers/controllers.js"></script>
+    
+</body>
+</html>

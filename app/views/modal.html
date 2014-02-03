@@ -1,0 +1,22 @@
+
+<div class="modal fade" id="modalQuestion" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"  data-bind="with: modalQuestion">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h3 data-bind="text: header"></h3>
+            </div>
+            <div class="modal-body">
+                <span data-bind="text: body"></span>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-link" data-dismiss="modal">Close</button>
+                <button class="btn btn-primary" data-dismiss="modal" data-bind="text: action, click: doAction"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+     
