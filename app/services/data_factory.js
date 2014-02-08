@@ -5,38 +5,55 @@ app.factory('data_factory', function() {
   
   function Platform(name) {
     this.name = name;
+    this.currencies = {};
 
     this.getKey = function() { 
       return this.name.toUpperCase(); 
     }
 
     this.getProducts = function() { 
-      var ret = [];
+      var ret = {};
       for(p in products) {
         if (products[p].platform.getKey() == this.getKey()) {
-          ret.push(products[p]);
+          var currency = products[p].currency;
+          console.log(currency);
+          if (!(currency.name in ret)) {
+            ret[currency.name] = [];
+            this.currencies[currency.name] = currency;
+          }
+          ret[currency.name].push(products[p]);
         }
       }
+      console.log(ret);
       return ret;
     }
 
-    this.getNet = function() {
+    this.getNet = function(products) {
+      console.log(products);
       var net = 0;
-      var products = this.getProducts();
       for (p in products) {
         net += products[p].getNet();
       }
       return net;
     }
 
-    this.getAverage = function() {
-      var products = this.getProducts();
+    this.getAverage = function(products) {
+      console.log(products);
       if (products.length == 0)
         return 0;
 
-      return this.getNet() / products.length;
+      return this.getNet(products) / products.length;
     }
 
+    this.getTransactions = function(products) {
+      var ret = [];
+      for (p in products) {
+        var product_transactions = products[p].getTransactions();
+        for (t in product_transactions)
+          ret.push(product_transactions[t]);
+      }
+      return ret;
+    }
   };
 
   var platforms = {

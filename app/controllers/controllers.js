@@ -73,8 +73,4 @@ app.controller('PlatformsController', function ($scope, data_factory, alert_serv
 
 app.controller('HoldingsController', function ($scope, data_factory){
   $scope.platforms = data_factory.getPlatforms();
-
-  $scope.getProductAverage = function(p) {
-    return p.getAverage();
-  }
 });  

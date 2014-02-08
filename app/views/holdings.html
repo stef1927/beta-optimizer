@@ -1,30 +1,42 @@
 <div class="container">
-    <div class="row-fluid">
+  <div class="row-fluid">
 
-    	<div class="col-md-8">
-    		<h2>Holdings</h2>
+    <div class="col-md-8">
+      <h2>Holdings</h2>
 
-            <div ng-repeat="platform in platforms">
-                <h3>{{platform.name}}</h3>
-        		<table class="text-right table table-striped table-hover table-bordered">
-                    <tr>
-                        <th>Product</th>
-                        <th>Average</th>
-                        <th>Net</th>
-                    </tr>
-                    <tr ng-repeat="product in platform.getProducts()">
-                        <td>{{product.code}}</td>
-                        <td>{{getProductAverage(product) | currency:product.currency.symbol}}</td>
-                        <td>{{product.getNet() | currency:product.currency.symbol}}</td>
-                    </tr>
-                    <tr>
-                        <th>Total</th>
-                        <th>{{platform.getAverage()}}</th>
-                        <th>{{platform.getNet()}}</th>
-                    </tr>
-                </table> 
-            </div>
-    	</div>
+      <div ng-repeat="platform in platforms">
+        <div ng-repeat="(cname, products) in platform.getProducts()">
+          <h3>{{platform.name + ' ' + cname}}</h3>
+
+        	<table class="text-right table table-striped table-hover table-bordered">
+            <tr>
+              <th class="text-right">Product</th>
+              <th class="text-right">Market Value</th>
+              <th class="text-right">Num transactions</th>
+              <th class="text-right">Average</th>
+              <th class="text-right">Net</th>
+            </tr>
+                    
+            <tr ng-repeat="product in products">
+              <td>{{product.code}}</td>
+              <td>{{product.market_value | currency:platform.currencies[cname].symbol}}</td>
+              <td>{{product.getTransactions().length}}</td>
+              <td>{{product.getAverage() | currency:platform.currencies[cname].symbol}}</td>
+              <td>{{product.getNet() | currency:platform.currencies[cname].symbol}}</td>
+            </tr>
+
+            <tr>
+              <th class="text-right">Total</th>
+              <th class="text-right">-</th>
+              <th class="text-right">{{platform.getTransactions(products).length}}</th>
+              <th class="text-right">{{platform.getAverage(products) | currency:platform.currencies[cname].symbol}}</th>
+              <th class="text-right">{{platform.getNet(products) | currency:platform.currencies[cname].symbol}}</th>
+            </tr>
+          </table> 
+        </div>
+      </div>
 
     </div>
+
+  </div>
 </div>
