@@ -73,4 +73,54 @@ app.controller('PlatformsController', function ($scope, data_factory, alert_serv
 
 app.controller('HoldingsController', function ($scope, data_factory){
   $scope.platforms = data_factory.getPlatforms();
+  $scope.currencies = data_factory.getCurrencies();
+  $scope.products = data_factory.getProducts();
+
+  $scope.getTransactions = function(product) {
+    return _.filter(transactions, function(transaction){
+      return transaction.product.getKey() == product.getKey();
+    });
+  }
+
+  $scope.getNet = function(product) {
+    var net = 0;
+    var transactions = $scope.getTransactions(product);
+    for (t in transactions) {
+      net += transactions[t].getNet();
+    }
+    return net;
+  }
+
+  $scope.getAverage = function(product) {
+    var transactions = $scope.getTransactions(product);
+    if (transactions.length == 0)
+      return 0;
+
+    return $scope.getNet(transactions) / transactions.length;
+  }
+
+  $scope.getTransactions = function(platform, currency) {
+    return _.filter(transactions, function(transaction){
+      return transaction.product.platform.getKey() == platform.getKey() &&
+        transaction.product.currency == currency;
+    });
+  }
+
+  $scope.getNet = function(platform, currency) {
+    var net = 0;
+    var transactions = $scope.getTransactions(platform, currency);
+    for (t in transactions) {
+      net += transactions[t].getNet();
+    }
+    return net;
+  }
+
+  $scope.getAverage = function(platform, currency) {
+    var transactions = $scope.getTransactions(platform, currency);
+    if (transactions.length == 0)
+      return 0;
+
+    return $scope.getNet(transactions) / transactions.length;
+  }
+
 });  

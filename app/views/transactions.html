@@ -53,8 +53,8 @@
                     <td>{{t.product.code}}</td>
                     <td>{{t.side}}</td>
                     <td>{{t.quantity}}</td>
-                    <td>{{t.price | currency:t.currencySymbol}}</td>
-                    <td>{{t.getNet() | currency:t.currencySymbol}}</td>
+                    <td>{{t.price | currency:t.product.currency}}</td>
+                    <td>{{t.getNet() | currency:t.product.currency}}</td>
                     <td><button type="button" class="btn btn-default btn-xs" ng-click="deleteTransaction(t)">
                       <span class="glyphicon glyphicon-trash"></span>
                     </button></td>

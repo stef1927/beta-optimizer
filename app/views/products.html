@@ -15,7 +15,7 @@
   				
   				<div class="form-group">
 	                <label class="control-label">Currency</label>
-	                <input type="text" class="form-control" placeholder="Currency" ng-model="new_product.currency.name"/>
+	                <input type="text" class="form-control" placeholder="Currency" ng-model="new_product.currency"/>
 	            </div>
 
 				<div class="form-group">
@@ -49,7 +49,7 @@
 	                <td>{{p.code}}</td>
 	                <td>{{p.description}}</td>
 	                <td>{{p.platform.name}}</td>
-	                <td>{{p.market_value | currency:p.currency.symbol}}</td>
+	                <td>{{p.market_value | currency:p.currency}}</td>
 	                <td>{{p.valuation_date | date:'yyyy-MM-dd'}}</td>
 	                <td><button type="button" class="btn btn-default btn-xs" ng-click="deleteProduct(p)">
 	                  <span class="glyphicon glyphicon-trash"></span>
