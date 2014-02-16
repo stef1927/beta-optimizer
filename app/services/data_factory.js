@@ -1,16 +1,16 @@
-app.factory('data_factory', function(indexed_db_service) {
+app.factory('data_factory', function (indexed_db_service) {
   var data_factory = {};
 
   var sides = [ 'Buy', 'Sell'];
   var currencies = ['HKD', 'CNY'];
-  
+
   function Platform(name) {
     this.name = name;
 
-    this.getKey = function() { 
-      return this.name.toUpperCase(); 
-    }
-  };
+    this.getKey = function () {
+      return this.name.toUpperCase();
+    };
+  }
 
   var platforms = {
     HSBC: new Platform("HSBC"),
@@ -25,10 +25,10 @@ app.factory('data_factory', function(indexed_db_service) {
     this.market_value = market_value;
     this.valuation_date = valuation_date;
 
-    this.getKey = function() { 
-      return this.code.toUpperCase(); 
-    }
-  };
+    this.getKey = function () {
+      return this.code.toUpperCase();
+    };
+  }
 
   var products = {
     GOOG: new Product("GOOG", "Google", platforms.HSBC, "HKD", 700, new Date()),
@@ -43,11 +43,11 @@ app.factory('data_factory', function(indexed_db_service) {
     this.price = price;
     this.date = date;
 
-    this.getNet = function() {
+    this.getNet = function () {
       var net = this.quantity * this.price;
-      return this.side == sides[0] ? net : net * -1;
-    }
-  };
+      return this.side === sides[0] ? net : net * -1;
+    };
+  }
 
   var transactions = [
     new Transaction(products.GOOG, sides[0], 100, 750, new Date()),
@@ -61,41 +61,42 @@ app.factory('data_factory', function(indexed_db_service) {
     this.error = error;
   }
 
-  data_factory.getSides = function() { return sides; }
-  data_factory.getCurrencies = function() { return currencies; }
-  data_factory.getPlatforms = function() { return platforms; }
-  data_factory.getProducts = function() { return products; }
-  data_factory.getTransactions = function() { return transactions; }
+  data_factory.getSides = function () { return sides; };
+  data_factory.getCurrencies = function () { return currencies; };
+  data_factory.getPlatforms = function () { return platforms; };
+  data_factory.getProducts = function () { return products; };
+  data_factory.getTransactions = function () { return transactions; };
 
-  data_factory.getDefaultPlatform = function() { 
-    return new Platform(""); 
-  }
-  
-  data_factory.addPlatform = function(p) {
+  data_factory.getDefaultPlatform = function () {
+    return new Platform("");
+  };
+
+  data_factory.addPlatform = function (p) {
     if (!(p.getKey() in platforms)) {
       platforms[p.getKey()] = new Platform(p.name);
-      return new Result(true, '');
+      indexed_db_service.addPlatform(p);
+      return new Result(true);
     }
-    return new Result(false, 'already exists');
-  }
+    return new Result(false, 'Platform already exists');
+  };
   
-  data_factory.deletePlatform = function(p) {
+  data_factory.deletePlatform = function (p) {
     var products = p.getProducts();
     if (products.length > 0) {
-      return new Result(false, 'platform still has ' + products.length + ' products');
+      return new Result(false, 'Platform still has ' + products.length + ' products');
     }
 
     delete platforms[p.getKey()];
-    return new Result(true, '');
-  }
+    return new Result(true);
+  };
 
-  data_factory.getDefaultProduct = function() { 
+  data_factory.getDefaultProduct = function () { 
     var platform = Object.keys(platforms).length > 0 ? platforms[Object.keys(platforms)[0]] : undefined;
     //console.log("Default platform : " + JSON.stringify(platform));
     return new Product("", "", platform, "HKD", 0, new Date()); 
-  }
+  };
 
-  data_factory.addProduct = function(p) {
+  data_factory.addProduct = function (p) {
     if (!(p.getKey() in products)) {
       
       if (!(_.contains(currencies, p.currency)))
@@ -103,42 +104,42 @@ app.factory('data_factory', function(indexed_db_service) {
 
       products[p.getKey()] = new Product
         (p.code.toUpperCase(), p.description, p.platform, p.currency.toUpperCase(), p.market_value, p.valuation_date);
-      return new Result(true, '');
+      return new Result(true);
     }
 
-    return new Result(false, 'already exists');
-  }
+    return new Result(false, 'Product already exists');
+  };
   
-  data_factory.deleteProduct = function(p) {
+  data_factory.deleteProduct = function (p) {
     var transactions = p.getTransactions();
     if (transactions.length > 0) {
-      return new Result(false, 'product still has ' + transactions.length + ' transactions');
+      return new Result(false, 'Product still has ' + transactions.length + ' transactions');
     }
 
     delete products[p.getKey()];
-    return new Result(true, '');
-  }
+    return new Result(true);
+  };
 
-  data_factory.getDefaultTransaction = function() { 
+  data_factory.getDefaultTransaction = function () { 
     var product = Object.keys(products).length > 0 ? products[Object.keys(products)[0]] : undefined;
     //console.log("Default product : " + JSON.stringify(product));
     return new Transaction(product, sides[0], 0, 0, new Date()); 
-  }
+  };
 
-  data_factory.addTransaction = function(t) {
+  data_factory.addTransaction = function (t) {
     transactions.push(new Transaction(t.product, t.side, t.quantity, t.price, t.date)); 
-    return new Result(true, '');
-  }
+    return new Result(true);
+  };
 
-  data_factory.deleteTransaction = function(t) {
+  data_factory.deleteTransaction = function (t) {
     var index = transactions.indexOf(t);
     if (index > -1) {
       transactions.splice(index, 1);
-      return new Result(true, '');
+      return new Result(true);
     }
 
-    return new Result(false, 'not found');
-  }
+    return new Result(false, 'Transaction not found');
+  };
 
   data_factory.openDb = function () {
     indexed_db_service.open(function (obj) {
@@ -146,6 +147,6 @@ app.factory('data_factory', function(indexed_db_service) {
     });
   };
 
-  //data_factory.openDb(); //TODO
+  data_factory.openDb();
   return data_factory;
 });

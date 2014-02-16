@@ -9,14 +9,16 @@ app.factory('indexed_db_service', function () {
       db = this.result;
       console.log('Open database succeeded');
 
-      for (i in stores) {
+      for (var i in stores) {
         var store = stores[i];
-        getObjects(store.name, success_callback);
+        if(db.objectStoreNames.contains(store.name)) {
+          getObjects(store.name, success_callback);
+        }
       }
     };
 
     request.onerror = function (event) {
-      console.error('Failed to open database: ' + event.target.errorCode);
+      console.error('Failed to open database: ' + event.target.error.message);
     };
 
     request.onupgradeneeded = function (event) {
@@ -24,24 +26,30 @@ app.factory('indexed_db_service', function () {
 
       db = event.currentTarget.result;
 
-      for (i in stores) {
+      for (var i in stores) {
         var store = stores[i];
         if(db.objectStoreNames.contains(store.name)) {
           console.log('Deleting ' + store.name);
           db.deleteObjectStore(store.name); //TODO - copy objects for migrations
         }
 
-        var store_obj = db.createObjectStore(store.name, {keyPath: "id", autoIncrement: true});
-        if (store.indexes) {
-          for (j in stores.indexes) {
-            var index_name = store.indexes[j];
-            store.createIndex(index_name, index_name, {unique: true});
-          }
-        }
+        createStore(store);
       }
     };
   }
 
+  function createStore(store) {
+    if(db) {
+        console.log('Creating store ' + store.name);
+        var store_obj = db.createObjectStore(store.name, {keyPath: "id", autoIncrement: true});
+        if (store.indexes) {
+          for (var j in stores.indexes) {
+            var index_name = store.indexes[j];
+            store.createIndex(index_name, index_name, {unique: true});
+          }
+        }
+    }
+  }
   function getStore(store_name, mode) {
     var tx = db.transaction(store_name, mode);
     return tx.objectStore(store_name);
@@ -53,7 +61,7 @@ app.factory('indexed_db_service', function () {
     store.clear().onsuccess = function(event) {
       console.log('Store ' + store_name + ' cleared');
     }.onerror = function (event) {
-      console.error("Failed to clear store: ", event.target.errorCode);
+      console.error("Failed to clear store: ", event.target.error.message);
     };
   }
 
@@ -63,9 +71,9 @@ app.factory('indexed_db_service', function () {
     store.put(obj).onsuccess = function (event) {
       console.log('Added object to ' + store_name);
     }.onerror = function (event) {
-      console.error("Failed to add object: ", event.target.errorCode);
+      console.error("Failed to add object: ", event.target.error.message);
     };
-  };
+  }
 
   function deleteObject(store_name, id) {
     var store = getStore(store_name, 'readwrite');
@@ -73,9 +81,9 @@ app.factory('indexed_db_service', function () {
     store.delete(id).onsuccess = function (e) {
       console.log('Deleted object from ' + store_name);
     }.onerror = function (e) {
-      console.error("Failed to delete object: ", event.target.errorCode);
+      console.error("Failed to delete object: ", event.target.error.message);
     };
-  };
+  }
 
   function getObject(store_name, key, success_callback) {
     var store = getStore(store_name, 'readonly');
@@ -85,7 +93,7 @@ app.factory('indexed_db_service', function () {
       if (value)
         success_callback(value);
     }.onerror = function (event) {
-      console.error("Failed to get object: ", event.target.errorCode);
+      console.error("Failed to get object: ", event.target.error.message);
     };
   }
 
@@ -97,7 +105,7 @@ app.factory('indexed_db_service', function () {
     store.count().onSuccess = function (event) {
       console.log(store_name + ' has ' + event.target.result + ' objects');
     }.onError = function (event) {
-      console.error("Failed to get number of objects: ", event.target.errorCode);
+      console.error("Failed to get number of objects: ", event.target.error.message);
     };
 
     store.openCursor().onSuccess = function (event) {
@@ -109,7 +117,7 @@ app.factory('indexed_db_service', function () {
             var value = event.target.result;
             success_callback(value);
           }.onError = function (event) {
-            console.error("Failed to get object: ", event.target.errorCode);
+            console.error("Failed to get object: ", event.target.error.message);
           };
 
           cursor.continue();
@@ -118,14 +126,14 @@ app.factory('indexed_db_service', function () {
           console.log("No more entries");
         }
       }.onError = function (event) {
-        console.error("Failed to open cursor: ", event.target.errorCode);
+        console.error("Failed to open cursor: ", event.target.error.message);
       };
   }
 
   var db_service = {};
 
   db_service.db_name = 'beta_optimizer';
-  db_service.db_version = 1;
+  db_service.db_version = 2;
   db_service.stores = [
     {name: 'Platforms', indexes: ['name']},
     {name: 'Products', indexes: ['name']},
