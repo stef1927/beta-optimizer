@@ -3,9 +3,9 @@ app.factory('indexed_db_service', function () {
 
   function openDatabase(db_name, db_version, stores, success_callback) {
     console.log('Opening database ' + db_name + ' at version ' + db_version + '...');
-    var request = indexedDB.open(db_name, db_version);
 
-    request.onsuccess = function (event) {
+    var req = indexedDB.open(db_name, db_version);
+    req.onsuccess = function (event) {
       db = this.result;
       console.log('Open database succeeded');
 
@@ -17,11 +17,11 @@ app.factory('indexed_db_service', function () {
       }
     };
 
-    request.onerror = function (event) {
+    req.onerror = function (event) {
       console.error('Failed to open database: ' + event.target.error.message);
     };
 
-    request.onupgradeneeded = function (event) {
+    req.onupgradeneeded = function (event) {
       console.log('Upgrading database...');
 
       db = event.currentTarget.result;
@@ -43,24 +43,28 @@ app.factory('indexed_db_service', function () {
         console.log('Creating store ' + store.name);
         var store_obj = db.createObjectStore(store.name, {keyPath: "id", autoIncrement: true});
         if (store.indexes) {
-          for (var j in stores.indexes) {
+          for (var j in store.indexes) {
             var index_name = store.indexes[j];
-            store.createIndex(index_name, index_name, {unique: true});
+            store_obj.createIndex(index_name, index_name, {unique: true});
           }
         }
     }
   }
   function getStore(store_name, mode) {
     var tx = db.transaction(store_name, mode);
+    console.log("Got tx for " + store_name);
     return tx.objectStore(store_name);
   }
 
   function clearStore(store_name) {
     var store = getStore(store_name, 'readwrite');
 
-    store.clear().onsuccess = function(event) {
+    var req = store.clear();
+    req.onsuccess = function(event) {
       console.log('Store ' + store_name + ' cleared');
-    }.onerror = function (event) {
+    };
+
+    req.onerror = function (event) {
       console.error("Failed to clear store: ", event.target.error.message);
     };
   }
@@ -68,9 +72,12 @@ app.factory('indexed_db_service', function () {
   function addObject (store_name, obj) {
     var store = getStore(store_name, 'readwrite');
 
-    store.put(obj).onsuccess = function (event) {
+    var req = store.put(obj);
+    req.onsuccess = function (event) {
       console.log('Added object to ' + store_name);
-    }.onerror = function (event) {
+    };
+
+    req.onerror = function (event) {
       console.error("Failed to add object: ", event.target.error.message);
     };
   }
@@ -78,9 +85,12 @@ app.factory('indexed_db_service', function () {
   function deleteObject(store_name, id) {
     var store = getStore(store_name, 'readwrite');
 
-    store.delete(id).onsuccess = function (e) {
+    var req = store.delete(id);
+    req.onsuccess = function (e) {
       console.log('Deleted object from ' + store_name);
-    }.onerror = function (e) {
+    };
+
+    req.onerror = function (e) {
       console.error("Failed to delete object: ", event.target.error.message);
     };
   }
@@ -88,11 +98,14 @@ app.factory('indexed_db_service', function () {
   function getObject(store_name, key, success_callback) {
     var store = getStore(store_name, 'readonly');
 
-    store.get(key).onsuccess = function (event) {
+    var req = store.get(key);
+    req.onsuccess = function (event) {
       var value = event.target.result;
       if (value)
-        success_callback(value);
-    }.onerror = function (event) {
+        success_callback(store_name, value);
+    };
+
+    req.onerror = function (event) {
       console.error("Failed to get object: ", event.target.error.message);
     };
   }
@@ -102,41 +115,50 @@ app.factory('indexed_db_service', function () {
 
     var store = getStore(store_name, 'readonly');
 
-    store.count().onSuccess = function (event) {
+    var req = store.count();
+    req.onsuccess = function (event) {
       console.log(store_name + ' has ' + event.target.result + ' objects');
-    }.onError = function (event) {
+    };
+
+    req.onerror = function (event) {
       console.error("Failed to get number of objects: ", event.target.error.message);
     };
 
-    store.openCursor().onSuccess = function (event) {
-        var cursor = event.target.result;
-        if (cursor) {
-          console.log('Got cursor for ' + store_name);
-          
-          store.get(cursor.key).onSuccess = function (event) {
-            var value = event.target.result;
-            success_callback(value);
-          }.onError = function (event) {
-            console.error("Failed to get object: ", event.target.error.message);
-          };
+    var curs = store.openCursor();
+    curs.onsuccess = function (event) {
+      var cursor = event.target.result;
+      if (cursor) {
+        console.log('Got cursor for ' + store_name);
+        
+        var req = store.get(cursor.key);
+        req.onsuccess = function (event) {
+          var value = event.target.result;
+          success_callback(store_name, value);
+        };
 
-          cursor.continue();
-        }
-        else {
-          console.log("No more entries");
-        }
-      }.onError = function (event) {
-        console.error("Failed to open cursor: ", event.target.error.message);
-      };
+        req.onerror = function (event) {
+          console.error("Failed to get object: ", event.target.error.message);
+        };
+
+        cursor.continue();
+      }
+      else {
+        console.log("No more entries");
+      }
+    };
+
+    curs.onerror = function (event) {
+      console.error("Failed to open cursor: ", event.target.error.message);
+    };
   }
 
   var db_service = {};
 
   db_service.db_name = 'beta_optimizer';
-  db_service.db_version = 2;
+  db_service.db_version = 3;
   db_service.stores = [
-    {name: 'Platforms', indexes: ['name']},
-    {name: 'Products', indexes: ['name']},
+    {name: 'Platforms', indexes: ['key']},
+    {name: 'Products', indexes: ['key']},
     {name: 'Transactions', indexes: []},
   ];
 

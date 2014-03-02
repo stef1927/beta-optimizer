@@ -78,6 +78,7 @@ app.controller('PlatformsController', function ($scope, data_factory, alert_serv
 app.controller('HoldingsController', function ($scope, data_factory) {
   $scope.platforms = data_factory.getPlatforms();
   $scope.products = data_factory.getProducts();
+  $scope.sides = data_factory.getSides();
 
   $scope.transactions = {};
   $scope.currencies = {};
@@ -94,46 +95,51 @@ app.controller('HoldingsController', function ($scope, data_factory) {
       var transaction = data_factory.getTransactions()[t];
       var product = transaction.product;
       var platform = product.platform;
-      if (!($scope.transactions[platform.getKey()])) {
-        $scope.transactions[platform.getKey()] = {};
+      if (!($scope.transactions[platform.key])) {
+        $scope.transactions[platform.key] = {};
       }
-      if (!($scope.transactions[platform.getKey()][product.currency])) {
-        $scope.transactions[platform.getKey()][product.currency] = {};
+      if (!($scope.transactions[platform.key][product.currency])) {
+        $scope.transactions[platform.key][product.currency] = {};
       }
-      if (!($scope.transactions[platform.getKey()][product.currency][product.getKey()] )) {
-        $scope.transactions[platform.getKey()][product.currency][product.getKey()]  = [];
+      if (!($scope.transactions[platform.key][product.currency][product.key] )) {
+        $scope.transactions[platform.key][product.currency][product.key]  = [];
       }
-      if (!($scope.transactions[platform.getKey()][product.currency].ALL_PRODUCTS)) {
-        $scope.transactions[platform.getKey()][product.currency].ALL_PRODUCTS = [];
+      if (!($scope.transactions[platform.key][product.currency].ALL_PRODUCTS)) {
+        $scope.transactions[platform.key][product.currency].ALL_PRODUCTS = [];
       }
-      $scope.transactions[platform.getKey()][product.currency][product.getKey()].push(transaction);
-      $scope.transactions[platform.getKey()][product.currency].ALL_PRODUCTS.push(transaction); 
+      $scope.transactions[platform.key][product.currency][product.key].push(transaction);
+      $scope.transactions[platform.key][product.currency].ALL_PRODUCTS.push(transaction); 
     }
   }
 
   function initCurrencies() {
     for (var p in data_factory.getPlatforms()) {
       var platform = data_factory.getPlatforms()[p];
-      $scope.currencies[platform.getKey()] = [];
+      $scope.currencies[platform.key] = [];
 
-      if (platform.getKey() in $scope.transactions) {
-        for (var currency in $scope.transactions[platform.getKey()]) {
-          $scope.currencies[platform.getKey()].push(currency);
+      if (platform.key in $scope.transactions) {
+        for (var currency in $scope.transactions[platform.key]) {
+          $scope.currencies[platform.key].push(currency);
         }
       }
      }
   }
 
   $scope.transactionsNet = function (transactions) {
+    var getNet = function (t) {
+      var net = t.quantity * t.price;
+      return t.side === $scope.sides[0] ? net : net * -1;
+    };
+
     var net = 0;
     for (var t in transactions) {
-      net += transactions[t].getNet();
+      net += getNet(transactions[t]);
     }
     return net;
   };
 
   $scope.productTransactions = function (product) {
-    return $scope.transactions[product.platform.getKey()][product.currency][product.getKey()];
+    return $scope.transactions[product.platform.key][product.currency][product.key];
   };
 
   $scope.productNet = function (product) {
@@ -149,13 +155,13 @@ app.controller('HoldingsController', function ($scope, data_factory) {
   };
 
   $scope.platformCurrencies = function (platform) {
-    return $scope.currencies[platform.getKey()];
+    return $scope.currencies[platform.key];
   };
 
   $scope.platformTransactions = function (platform, currency) {
-    if ((platform.getKey() in $scope.transactions) && 
-        (currency in $scope.transactions[platform.getKey()])) {
-        return $scope.transactions[platform.getKey()][currency].ALL_PRODUCTS;
+    if ((platform.key in $scope.transactions) && 
+        (currency in $scope.transactions[platform.key])) {
+        return $scope.transactions[platform.key][currency].ALL_PRODUCTS;
     }
     return [];  
   };

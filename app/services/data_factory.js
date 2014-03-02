@@ -6,34 +6,34 @@ app.factory('data_factory', function (indexed_db_service) {
 
   function Platform(name) {
     this.name = name;
-
-    this.getKey = function () {
-      return this.name.toUpperCase();
-    };
+    this.key = name.toUpperCase();
+    
+    this.products = [];
   }
 
+  // Indexed by platform key
   var platforms = {
-    HSBC: new Platform("HSBC"),
-    STANCHART: new Platform("StanChart")
+    //HSBC: new Platform("HSBC"),
+    //STANCHART: new Platform("StanChart")
   };
 
   function Product(code, description, platform, currency, market_value, valuation_date) {
     this.code = code;
+    this.key = code.toUpperCase();
     this.description = description;
     this.platform = platform;
     this.currency = currency;
     this.market_value = market_value;
     this.valuation_date = valuation_date;
 
-    this.getKey = function () {
-      return this.code.toUpperCase();
-    };
+    this.transactions = [];
   }
 
+  // Indexed by product key
   var products = {
-    GOOG: new Product("GOOG", "Google", platforms.HSBC, "HKD", 700, new Date()),
-    BP: new Product("BP", "BP", platforms.STANCHART, "CNY", 1000, new Date()),
-    SONY: new Product("SONY", "Sony", platforms.HSBC, "HKD", 854, new Date()),
+   // GOOG: new Product("GOOG", "Google", platforms.HSBC, "HKD", 700, new Date()),
+   // BP: new Product("BP", "BP", platforms.STANCHART, "CNY", 1000, new Date()),
+   // SONY: new Product("SONY", "Sony", platforms.HSBC, "HKD", 854, new Date()),
   };
 
   function Transaction(product, side, quantity, price, date) {
@@ -42,17 +42,12 @@ app.factory('data_factory', function (indexed_db_service) {
     this.quantity = quantity;
     this.price = price;
     this.date = date;
-
-    this.getNet = function () {
-      var net = this.quantity * this.price;
-      return this.side === sides[0] ? net : net * -1;
-    };
   }
 
   var transactions = [
-    new Transaction(products.GOOG, sides[0], 100, 750, new Date()),
-    new Transaction(products.BP, sides[1], 200, 150, new Date()),
-    new Transaction(products.SONY, sides[0], 300, 450, new Date())
+   // new Transaction(products.GOOG, sides[0], 100, 750, new Date()),
+   // new Transaction(products.BP, sides[1], 200, 150, new Date()),
+   // new Transaction(products.SONY, sides[0], 300, 450, new Date())
   ];
 
 
@@ -72,21 +67,22 @@ app.factory('data_factory', function (indexed_db_service) {
   };
 
   data_factory.addPlatform = function (p) {
-    if (!(p.getKey() in platforms)) {
-      platforms[p.getKey()] = new Platform(p.name);
-      indexed_db_service.addPlatform(p);
+    var new_platform = new Platform(p.name);
+    if (!(new_platform.key in platforms)) {
+      platforms[new_platform.key] = new_platform;
+      indexed_db_service.addPlatform(new_platform);
       return new Result(true);
     }
     return new Result(false, 'Platform already exists');
   };
   
   data_factory.deletePlatform = function (p) {
-    var products = p.getProducts();
-    if (products.length > 0) {
-      return new Result(false, 'Platform still has ' + products.length + ' products');
+    if (p.products.length > 0) {
+      return new Result(false, 'Platform still has ' + p.products.length + ' products');
     }
 
-    delete platforms[p.getKey()];
+    indexed_db_service.deletePlatform(p);
+    delete platforms[p.key];
     return new Result(true);
   };
 
@@ -97,13 +93,18 @@ app.factory('data_factory', function (indexed_db_service) {
   };
 
   data_factory.addProduct = function (p) {
-    if (!(p.getKey() in products)) {
-      
-      if (!(_.contains(currencies, p.currency)))
-        currencies.push(p.currency);
+    var new_product = new Product(p.code.toUpperCase(), p.description, 
+      p.platform, p.currency.toUpperCase(), p.market_value, p.valuation_date);
 
-      products[p.getKey()] = new Product
-        (p.code.toUpperCase(), p.description, p.platform, p.currency.toUpperCase(), p.market_value, p.valuation_date);
+    if (!(new_product.key in products)) {
+      if (!(_.contains(currencies, new_product.currency)))
+        currencies.push(new_product.currency);
+
+      p.platform.products.push(new_product);
+
+      indexed_db_service.addProduct(new_product);
+      
+      products[p.key] = new_product;
       return new Result(true);
     }
 
@@ -111,12 +112,13 @@ app.factory('data_factory', function (indexed_db_service) {
   };
   
   data_factory.deleteProduct = function (p) {
-    var transactions = p.getTransactions();
-    if (transactions.length > 0) {
-      return new Result(false, 'Product still has ' + transactions.length + ' transactions');
+    if (p.transactions.length > 0) {
+      return new Result(false, 'Product still has ' + p.transactions.length + ' transactions');
     }
 
-    delete products[p.getKey()];
+    //TODO - remove product from platform products
+    indexed_db_service.deleteProduct(p);
+    delete products[p.key];
     return new Result(true);
   };
 
@@ -127,14 +129,19 @@ app.factory('data_factory', function (indexed_db_service) {
   };
 
   data_factory.addTransaction = function (t) {
-    transactions.push(new Transaction(t.product, t.side, t.quantity, t.price, t.date)); 
+    var new_transaction = new Transaction(t.product, t.side, t.quantity, t.price, t.date);
+    transactions.push(new_transaction); 
+    t.product.transactions.push(new_transaction);
+    indexed_db_service.addTransaction(new_transaction);
     return new Result(true);
   };
 
   data_factory.deleteTransaction = function (t) {
     var index = transactions.indexOf(t);
     if (index > -1) {
+      //TODO - remove from product transactions
       transactions.splice(index, 1);
+      indexed_db_service.deleteTransaction(t);
       return new Result(true);
     }
 
@@ -142,8 +149,21 @@ app.factory('data_factory', function (indexed_db_service) {
   };
 
   data_factory.openDb = function () {
-    indexed_db_service.open(function (obj) {
-      console.log(obj);
+    indexed_db_service.open(function (store, obj) {
+      //console.log(store + ' : ' + JSON.stringify(obj));
+      if (store === "Platforms") {
+        platforms[obj.key] = obj;
+      }
+      else if (store === "Products") {
+        //TODO - refactor method and add product to platform
+        if (!(_.contains(currencies, obj.currency)))
+          currencies.push(obj.currency);
+        products[obj.key] = obj;
+      }
+      else if (store === "Transactions") {
+        //TODO - refactor method and add transaction to products
+        transactions.push(obj);
+      }
     });
   };
 
