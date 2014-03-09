@@ -1,9 +1,8 @@
 angular.module('App.Filters', [])
-  .filter('with_platform_currency', function() {
-  return function(products, platform, currency) {
+  .filter('with_currency', function() {
+  return function(products, currency) {
       return _.filter(products, function(product){
-          return product.platform.key == platform.key &&
-            product.currency == currency;
+          return product.currency == currency;
       });
   };
 }).filter('with_transactions', function() {

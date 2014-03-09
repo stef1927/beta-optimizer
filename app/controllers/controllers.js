@@ -81,52 +81,7 @@ app.controller('HoldingsController', function ($scope, data_factory) {
   $scope.products = data_factory.getProducts();
   $scope.sides = data_factory.getSides();
 
-  $scope.transactions = {};
-  $scope.currencies = {};
-
-  init();
-
-  function init() {
-    initTransactions();
-    initCurrencies();
-  }
-
-  function initTransactions() {
-    for (var t = 0; t < data_factory.getTransactions().length; t++) {
-      var transaction = data_factory.getTransactions()[t];
-      var product = $scope.products[transaction.product];
-      var platform = $scope.platforms[product.platform];
-      if (!($scope.transactions[platform.key])) {
-        $scope.transactions[platform.key] = {};
-      }
-      if (!($scope.transactions[platform.key][product.currency])) {
-        $scope.transactions[platform.key][product.currency] = {};
-      }
-      if (!($scope.transactions[platform.key][product.currency][product.key] )) {
-        $scope.transactions[platform.key][product.currency][product.key]  = [];
-      }
-      if (!($scope.transactions[platform.key][product.currency].ALL_PRODUCTS)) {
-        $scope.transactions[platform.key][product.currency].ALL_PRODUCTS = [];
-      }
-      $scope.transactions[platform.key][product.currency][product.key].push(transaction);
-      $scope.transactions[platform.key][product.currency].ALL_PRODUCTS.push(transaction); 
-    }
-  }
-
-  function initCurrencies() {
-    for (var p in data_factory.getPlatforms()) {
-      var platform = data_factory.getPlatforms()[p];
-      $scope.currencies[platform.key] = [];
-
-      if (platform.key in $scope.transactions) {
-        for (var currency in $scope.transactions[platform.key]) {
-          $scope.currencies[platform.key].push(currency);
-        }
-      }
-     }
-  }
-
-  $scope.transactionsNet = function (transactions) {
+  $scope.net = function (transactions) {
     var getNet = function (t) {
       var net = t.quantity * t.price;
       return t.side === $scope.sides[0] ? net : net * -1;
@@ -139,44 +94,31 @@ app.controller('HoldingsController', function ($scope, data_factory) {
     return net;
   };
 
-  $scope.productTransactions = function (product) {
-    return $scope.transactions[product.platform][product.currency][product.key];
-  };
-
-  $scope.productNet = function (product) {
-    return $scope.transactionsNet($scope.productTransactions(product));
-  };
-
-  $scope.productAverage = function (product) {
-    var transactions = $scope.productTransactions(product);
+  $scope.average = function (transactions) {
     if (transactions.length === 0)
       return 0;
 
-    return $scope.transactionsNet(transactions) / transactions.length;
+    return $scope.net(transactions) / transactions.length;
   };
 
-  $scope.platformCurrencies = function (platform) {
-    return $scope.currencies[platform.key];
-  };
-
-  $scope.platformTransactions = function (platform, currency) {
-    if ((platform.key in $scope.transactions) && 
-        (currency in $scope.transactions[platform.key])) {
-        return $scope.transactions[platform.key][currency].ALL_PRODUCTS;
+  $scope.productsTransactions = function (products) {
+    var ret = [];
+    for (var p = 0; p < products.length; p++) {
+      ret = ret.concat(products[p].transactions);
     }
-    return [];  
+    return ret;
   };
 
-  $scope.platformNet = function (platform, currency) {
-    return $scope.transactionsNet($scope.platformTransactions(platform, currency));
+  $scope.totalTransactionsNum = function(products) {
+    return $scope.productsTransactions(products).length;
   };
 
-  $scope.platformAverage = function (platform, currency) {
-    var transactions = $scope.platformTransactions(platform, currency);
-    if (transactions.length === 0)
-      return 0;
+  $scope.totalAverage = function(products) {
+    return $scope.average($scope.productsTransactions(products));
+  };
 
-    return $scope.transactionsNet(transactions) / transactions.length;
+  $scope.totalNet = function(products) {
+    return $scope.net($scope.productsTransactions(products));
   };
 
 });

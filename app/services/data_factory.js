@@ -1,21 +1,17 @@
-app.factory('data_factory', function (indexed_db_service) {
+app.factory('data_factory', function (indexed_db_service, $q) {
   var data_factory = {};
 
   var sides = [ 'Buy', 'Sell'];
-  var currencies = ['HKD', 'CNY'];
 
   function Platform(name) {
     this.name = name;
     this.key = name.toUpperCase();
     
-    this.products = [];
+    this.products = {};
   }
 
   // Indexed by platform key
-  var platforms = {
-    //HSBC: new Platform("HSBC"),
-    //STANCHART: new Platform("StanChart")
-  };
+  var platforms = {};
 
   function Product(code, description, platform, currency, market_value, valuation_date) {
     this.code = code;
@@ -30,11 +26,7 @@ app.factory('data_factory', function (indexed_db_service) {
   }
 
   // Indexed by product key
-  var products = {
-   // GOOG: new Product("GOOG", "Google", platforms.HSBC, "HKD", 700, new Date()),
-   // BP: new Product("BP", "BP", platforms.STANCHART, "CNY", 1000, new Date()),
-   // SONY: new Product("SONY", "Sony", platforms.HSBC, "HKD", 854, new Date()),
-  };
+  var products = {};
 
   function Transaction(product, side, quantity, price, date) {
     this.product = product;
@@ -44,12 +36,7 @@ app.factory('data_factory', function (indexed_db_service) {
     this.date = date;
   }
 
-  var transactions = [
-   // new Transaction(products.GOOG, sides[0], 100, 750, new Date()),
-   // new Transaction(products.BP, sides[1], 200, 150, new Date()),
-   // new Transaction(products.SONY, sides[0], 300, 450, new Date())
-  ];
-
+  var transactions = [];
 
   function Result(ok, error) {
     this.ok = ok;
@@ -57,7 +44,6 @@ app.factory('data_factory', function (indexed_db_service) {
   }
 
   data_factory.getSides = function () { return sides; };
-  data_factory.getCurrencies = function () { return currencies; };
   data_factory.getPlatforms = function () { return platforms; };
   data_factory.getProducts = function () { return products; };
   data_factory.getTransactions = function () { return transactions; };
@@ -102,11 +88,14 @@ app.factory('data_factory', function (indexed_db_service) {
   };
 
   data_factory.doAddProduct = function(p) {
-    if (!(_.contains(currencies, p.currency)))
-        currencies.push(p.currency);
+    var platform = platforms[p.platform];
+    
+    if (!platform.products[p.currency])
+      platform.products[p.currency] = [];
 
-      platforms[p.platform].products.push(p);
-      products[p.key] = p;
+    platform.products[p.currency].push(p);
+
+    products[p.key] = p;
   };
 
   data_factory.addProduct = function (p) {
@@ -130,7 +119,11 @@ app.factory('data_factory', function (indexed_db_service) {
       return new Result(false, 'Product still has ' + p.transactions.length + ' transactions');
     }
 
-    platofmrs[p.platform].products = _without(platforms[p.platform].products, p);
+    var platform = platforms[p.platform];
+    platform.products[p.currency] = _without(platform.products[p.currency], p);
+    if (platform.products[p.currency].length === 0)
+      delete platform.products[p.currency];
+
     indexed_db_service.deleteProduct(p);
     delete products[p.key];
 
@@ -177,6 +170,10 @@ app.factory('data_factory', function (indexed_db_service) {
               indexed_db_service.getTransactions(function (tran) {
                 if (tran) {
                   data_factory.doAddTransaction(tran);
+                }
+                else {
+                  //completed, TODO: notify angular
+                  //http://sravi-kiran.blogspot.hk/2014/01/CreatingATodoListUsingIndexedDbAndAngularJs.html
                 }
               });
             }
