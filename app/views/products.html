@@ -48,7 +48,7 @@
 	            <tr ng-repeat="p in productsArray() | filter:searchText">
 	                <td>{{p.code}}</td>
 	                <td>{{p.description}}</td>
-	                <td>{{p.platform.name}}</td>
+	                <td>{{platforms[p.platform].name}}</td>
 	                <td>{{p.market_value | currency:p.currency}}</td>
 	                <td>{{p.valuation_date | date:'yyyy-MM-dd'}}</td>
 	                <td><button type="button" class="btn btn-default btn-xs" ng-click="deleteProduct(p)">

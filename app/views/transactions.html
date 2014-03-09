@@ -49,8 +49,8 @@
                 </tr>
                 <tr ng-repeat="t in transactions | filter:searchText">
                     <td>{{t.date | date:'yyyy-MM-dd HH:mm:ss'}}</td> 
-                    <td>{{t.product.platform.name}}</td>
-                    <td>{{t.product.code}}</td>
+                    <td>{{platforms[products[t.product].platform].name}}</td>
+                    <td>{{products[t.product].code}}</td>
                     <td>{{t.side}}</td>
                     <td>{{t.quantity}}</td>
                     <td>{{t.price | currency:t.product.currency}}</td>

@@ -6,6 +6,7 @@ app.controller('NavController', function ($scope, $location) {
 app.controller('TransactionsController', function ($scope, data_factory, alert_service) {
   $scope.transactions = data_factory.getTransactions();
   $scope.products = data_factory.getProducts();
+  $scope.platforms = data_factory.getPlatforms();
   $scope.sides = data_factory.getSides();
   $scope.new_transaction = data_factory.getDefaultTransaction();
 
@@ -93,8 +94,8 @@ app.controller('HoldingsController', function ($scope, data_factory) {
   function initTransactions() {
     for (var t = 0; t < data_factory.getTransactions().length; t++) {
       var transaction = data_factory.getTransactions()[t];
-      var product = transaction.product;
-      var platform = product.platform;
+      var product = $scope.products[transaction.product];
+      var platform = $scope.platforms[product.platform];
       if (!($scope.transactions[platform.key])) {
         $scope.transactions[platform.key] = {};
       }
@@ -139,7 +140,7 @@ app.controller('HoldingsController', function ($scope, data_factory) {
   };
 
   $scope.productTransactions = function (product) {
-    return $scope.transactions[product.platform.key][product.currency][product.key];
+    return $scope.transactions[product.platform][product.currency][product.key];
   };
 
   $scope.productNet = function (product) {

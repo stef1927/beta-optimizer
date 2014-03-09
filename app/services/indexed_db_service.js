@@ -9,12 +9,7 @@ app.factory('indexed_db_service', function () {
       db = this.result;
       console.log('Open database succeeded');
 
-      for (var i in stores) {
-        var store = stores[i];
-        if(db.objectStoreNames.contains(store.name)) {
-          getObjects(store.name, success_callback);
-        }
-      }
+      success_callback();
     };
 
     req.onerror = function (event) {
@@ -102,7 +97,7 @@ app.factory('indexed_db_service', function () {
     req.onsuccess = function (event) {
       var value = event.target.result;
       if (value)
-        success_callback(store_name, value);
+        success_callback(value);
     };
 
     req.onerror = function (event) {
@@ -133,7 +128,7 @@ app.factory('indexed_db_service', function () {
         var req = store.get(cursor.key);
         req.onsuccess = function (event) {
           var value = event.target.result;
-          success_callback(store_name, value);
+          success_callback(value);
         };
 
         req.onerror = function (event) {
@@ -144,11 +139,12 @@ app.factory('indexed_db_service', function () {
       }
       else {
         console.log("No more entries");
+        success_callback(null);
       }
     };
 
     curs.onerror = function (event) {
-      console.error("Failed to open cursor: ", event.target.error.message);
+      console.error("Failed to open cursor: ", event);
     };
   }
 

@@ -66,10 +66,19 @@ app.factory('data_factory', function (indexed_db_service) {
     return new Platform("");
   };
 
+  data_factory.doAddPlatform = function (p) {
+    platforms[p.key] = p; 
+  };
+
   data_factory.addPlatform = function (p) {
     var new_platform = new Platform(p.name);
+
+    if (!new_platform.key)
+      return new Result(false, "Please specify a name");
+
     if (!(new_platform.key in platforms)) {
-      platforms[new_platform.key] = new_platform;
+      data_factory.doAddPlatform(new_platform);
+
       indexed_db_service.addPlatform(new_platform);
       return new Result(true);
     }
@@ -92,19 +101,24 @@ app.factory('data_factory', function (indexed_db_service) {
     return new Product("", "", platform, "HKD", 0, new Date()); 
   };
 
+  data_factory.doAddProduct = function(p) {
+    if (!(_.contains(currencies, p.currency)))
+        currencies.push(p.currency);
+
+      platforms[p.platform].products.push(p);
+      products[p.key] = p;
+  };
+
   data_factory.addProduct = function (p) {
     var new_product = new Product(p.code.toUpperCase(), p.description, 
-      p.platform, p.currency.toUpperCase(), p.market_value, p.valuation_date);
+      p.platform.key, p.currency.toUpperCase(), p.market_value, p.valuation_date);
+
+    if (!new_product.key)
+      return new Result(false, "Please specify a code");
 
     if (!(new_product.key in products)) {
-      if (!(_.contains(currencies, new_product.currency)))
-        currencies.push(new_product.currency);
-
-      p.platform.products.push(new_product);
-
+      data_factory.doAddProduct(new_product);
       indexed_db_service.addProduct(new_product);
-      
-      products[p.key] = new_product;
       return new Result(true);
     }
 
@@ -116,55 +130,60 @@ app.factory('data_factory', function (indexed_db_service) {
       return new Result(false, 'Product still has ' + p.transactions.length + ' transactions');
     }
 
-    //TODO - remove product from platform products
+    platofmrs[p.platform].products = _without(platforms[p.platform].products, p);
     indexed_db_service.deleteProduct(p);
     delete products[p.key];
+
     return new Result(true);
   };
 
   data_factory.getDefaultTransaction = function () { 
     var product = Object.keys(products).length > 0 ? products[Object.keys(products)[0]] : undefined;
-    //console.log("Default product : " + JSON.stringify(product));
     return new Transaction(product, sides[0], 0, 0, new Date()); 
   };
 
+  data_factory.doAddTransaction = function (t) {
+    products[t.product].transactions.push(t);
+    transactions.push(t); 
+  };
+
   data_factory.addTransaction = function (t) {
-    var new_transaction = new Transaction(t.product, t.side, t.quantity, t.price, t.date);
-    transactions.push(new_transaction); 
-    t.product.transactions.push(new_transaction);
+    var new_transaction = new Transaction(t.product.key, t.side, t.quantity, t.price, t.date);
+    data_factory.doAddTransaction(new_transaction);
     indexed_db_service.addTransaction(new_transaction);
     return new Result(true);
   };
 
   data_factory.deleteTransaction = function (t) {
-    var index = transactions.indexOf(t);
-    if (index > -1) {
-      //TODO - remove from product transactions
-      transactions.splice(index, 1);
-      indexed_db_service.deleteTransaction(t);
-      return new Result(true);
-    }
-
-    return new Result(false, 'Transaction not found');
+    products[t.product].transactions = _without(products[t.product].transactions, t);
+    transactions = _without(transactions, t);
+    indexed_db_service.deleteTransaction(t);
+    return new Result(true);
   };
 
   data_factory.openDb = function () {
-    indexed_db_service.open(function (store, obj) {
-      //console.log(store + ' : ' + JSON.stringify(obj));
-      if (store === "Platforms") {
-        platforms[obj.key] = obj;
-      }
-      else if (store === "Products") {
-        //TODO - refactor method and add product to platform
-        if (!(_.contains(currencies, obj.currency)))
-          currencies.push(obj.currency);
-        products[obj.key] = obj;
-      }
-      else if (store === "Transactions") {
-        //TODO - refactor method and add transaction to products
-        transactions.push(obj);
-      }
-    });
+    indexed_db_service.open(function () {
+      
+      indexed_db_service.getPlatforms(function (plat) {
+        if (plat) {
+          data_factory.doAddPlatform(plat);
+        }
+        else {
+          indexed_db_service.getProducts(function (prod) {
+            if (prod) {
+              data_factory.doAddProduct(prod);
+            }
+            else {
+              indexed_db_service.getTransactions(function (tran) {
+                if (tran) {
+                  data_factory.doAddTransaction(tran);
+                }
+              });
+            }
+          });
+        }
+      });
+     });
   };
 
   data_factory.openDb();
