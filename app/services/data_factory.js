@@ -43,10 +43,21 @@ app.factory('data_factory', function (indexed_db_service, $q) {
     this.error = error;
   }
 
-  data_factory.getSides = function () { return sides; };
-  data_factory.getPlatforms = function () { return platforms; };
-  data_factory.getProducts = function () { return products; };
-  data_factory.getTransactions = function () { return transactions; };
+  data_factory.getSides = function () {
+    return sides; 
+  };
+  
+  data_factory.getPlatforms = function () {
+    return platforms;
+  };
+  
+  data_factory.getProducts = function () { 
+    return products; 
+  };
+  
+  data_factory.getTransactions = function () { 
+    return transactions;
+  };
 
   data_factory.getDefaultPlatform = function () {
     return new Platform("");
@@ -65,7 +76,7 @@ app.factory('data_factory', function (indexed_db_service, $q) {
     if (!(new_platform.key in platforms)) {
       data_factory.doAddPlatform(new_platform);
 
-      indexed_db_service.addPlatform(new_platform);
+      indexed_db_service.addPlatform(new_platform); //TODO - handle failure
       return new Result(true);
     }
     return new Result(false, 'Platform already exists');
@@ -76,7 +87,7 @@ app.factory('data_factory', function (indexed_db_service, $q) {
       return new Result(false, 'Platform still has ' + p.products.length + ' products');
     }
 
-    indexed_db_service.deletePlatform(p);
+    indexed_db_service.deletePlatform(p); //TODO - handle failure
     delete platforms[p.key];
     return new Result(true);
   };
@@ -107,7 +118,7 @@ app.factory('data_factory', function (indexed_db_service, $q) {
 
     if (!(new_product.key in products)) {
       data_factory.doAddProduct(new_product);
-      indexed_db_service.addProduct(new_product);
+      indexed_db_service.addProduct(new_product); //TODO - handle failure
       return new Result(true);
     }
 
@@ -124,7 +135,7 @@ app.factory('data_factory', function (indexed_db_service, $q) {
     if (platform.products[p.currency].length === 0)
       delete platform.products[p.currency];
 
-    indexed_db_service.deleteProduct(p);
+    indexed_db_service.deleteProduct(p); //TODO - handle failure
     delete products[p.key];
 
     return new Result(true);
@@ -143,20 +154,22 @@ app.factory('data_factory', function (indexed_db_service, $q) {
   data_factory.addTransaction = function (t) {
     var new_transaction = new Transaction(t.product.key, t.side, t.quantity, t.price, t.date);
     data_factory.doAddTransaction(new_transaction);
-    indexed_db_service.addTransaction(new_transaction);
+    indexed_db_service.addTransaction(new_transaction); //TODO - handle failure
     return new Result(true);
   };
 
   data_factory.deleteTransaction = function (t) {
     products[t.product].transactions = _without(products[t.product].transactions, t);
     transactions = _without(transactions, t);
-    indexed_db_service.deleteTransaction(t);
+    indexed_db_service.deleteTransaction(t); //TODO - handle failure
     return new Result(true);
   };
 
+  //http://sravi-kiran.blogspot.hk/2014/01/CreatingATodoListUsingIndexedDbAndAngularJs.html
   data_factory.openDb = function () {
+    var deferred = $q.defer();
+    
     indexed_db_service.open(function () {
-      
       indexed_db_service.getPlatforms(function (plat) {
         if (plat) {
           data_factory.doAddPlatform(plat);
@@ -172,17 +185,19 @@ app.factory('data_factory', function (indexed_db_service, $q) {
                   data_factory.doAddTransaction(tran);
                 }
                 else {
-                  //completed, TODO: notify angular
-                  //http://sravi-kiran.blogspot.hk/2014/01/CreatingATodoListUsingIndexedDbAndAngularJs.html
+                  deferred.resolve();
                 }
               });
             }
           });
         }
       });
+     }, function (err) {
+       deferred.reject(err);
      });
+
+    return deferred.promise;
   };
 
-  data_factory.openDb();
   return data_factory;
 });

@@ -58,8 +58,8 @@ app.controller('ProductsController', function ($scope, data_factory, alert_servi
 });
 
 app.controller('PlatformsController', function ($scope, data_factory, alert_service) {
-  $scope.platforms = data_factory.getPlatforms();
   $scope.new_platform = data_factory.getDefaultPlatform();
+  $scope.platforms = data_factory.getPlatforms();
 
   $scope.addPlatform = function () {
     console.log('Adding: ' + JSON.stringify($scope.new_platform));
@@ -77,9 +77,21 @@ app.controller('PlatformsController', function ($scope, data_factory, alert_serv
 });
 
 app.controller('HoldingsController', function ($scope, data_factory) {
-  $scope.platforms = data_factory.getPlatforms();
-  $scope.products = data_factory.getProducts();
   $scope.sides = data_factory.getSides();
+
+  $scope.platforms = {};
+  $scope.products = {};
+
+  init();
+  
+  function init() {
+    data_factory.openDb().then(function() {
+      $scope.platforms = data_factory.getPlatforms();
+      $scope.products = data_factory.getProducts();
+    }, function(err) {
+      alert_service.add("error", "Failed to open database: " + err);
+    });
+  }
 
   $scope.net = function (transactions) {
     var getNet = function (t) {
